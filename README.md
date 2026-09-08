@@ -1,98 +1,47 @@
-# 🚨 Monitor Sísmico & Sistema Adaptativo de Evacuación
+# Guía de Ejecución - Monitor Sísmico
 
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![Android SDK](https://img.shields.io/badge/SDK-24+-3DDC84?style=for-the-badge&logo=android&logoColor=white)
-![Material Design 3](https://img.shields.io/badge/Material--Design-3-757575?style=for-the-badge&logo=material-design&logoColor=white)
-
-## 📌 Introducción
-**Monitor Sísmico** es una solución avanzada de seguridad personal diseñada para dispositivos Android. La aplicación utiliza el hardware del dispositivo para detectar vibraciones sísmicas en tiempo real y, mediante algoritmos de computación adaptativa, guía al usuario hacia la zona segura más cercana de manera autónoma.
-
-A diferencia de las alertas convencionales, este sistema combina **fusión de sensores (Acelerómetro + GPS)** y la **fórmula de Haversine** para calcular rutas de evacuación dinámicas, funcionando incluso cuando el dispositivo está bloqueado.
+Instrucciones para compilar, instalar y probar la aplicación en un dispositivo Android.
 
 ---
 
-## ✨ Características Principales
-
-- 📡 **Detección en Tiempo Real:** Monitoreo constante del acelerómetro con un umbral de activación calibrado a **13.0 m/s²**.
-- 📍 **Fusión de Contexto:** Integración de *Google Fused Location Provider* para obtener coordenadas precisas en el momento exacto del evento.
-- 📐 **Cálculo de Evacuación:** Implementación de la fórmula de Haversine para determinar la distancia geodésica a zonas seguras locales.
-- 🛡️ **Foreground Service:** Garantiza que el monitoreo no sea interrumpido por el sistema Android, manteniendo un consumo energético optimizado.
-- 🔓 **Alerta de Alta Prioridad:** Interrupción del bloqueo de pantalla y encendido automático del panel visual ante emergencias críticas.
+## 1. Requisitos Previos
+*   **Android Studio:** Jellyfish / Ladybug (o superior).
+*   **Dispositivo de prueba:** Teléfono físico con **Android 8.0 (API 26)** o superior, sensor acelerómetro, GPS activado y la aplicación Google Maps instalada.
 
 ---
 
-## 🏗️ Arquitectura del Proyecto
+## 2. Configuración en Android Studio
 
-El proyecto sigue una estructura modular orientada a servicios y motores de reglas:
+### Abrir el proyecto
+*   Abre Android Studio, selecciona **Open** y elige la carpeta del proyecto.
 
-```text
-app/src/main/
-├── java/com/example/myapplication/
-│   ├── MainActivity.kt           # Panel de control y Dashboard (MD3)
-│   ├── SensorService.kt          # Servicio de primer plano (Monitoring Core)
-│   ├── ContextManager.kt         # Gestión de sensores y calibración G-Force
-│   ├── AdaptationEngine.kt       # Motor de reglas y cálculo de rutas Haversine
-│   └── AlertaSismoActivity.kt    # Interfaz de emergencia (System Alert Window)
-└── res/
-    ├── layout/
-    │   ├── activity_main.xml     # Dashboard con Material Design 3
-    │   └── activity_alerta_sismo.xml # Diálogo de alta visibilidad
-    └── values/                   # Definiciones de estilos y temas
-```
+### Solución a errores de compatibilidad de Gradle (AGP)
+Si al sincronizar aparece el error: `The project is using an incompatible version (AGP 9.3.2)...`
+1.  Abre el archivo `gradle/libs.versions.toml` (o `build.gradle.kts`).
+2.  Cambia la versión de **agp** de `9.3.2` a `9.1.0` (o la versión soportada por tu Android Studio).
+3.  Haz clic en **Sync Now** en la barra superior.
 
 ---
 
-## 🛠️ Tecnologías y Requisitos
-
-- **Lenguaje:** [Kotlin](https://kotlinlang.org/)
-- **Min SDK:** 24 (Android 7.0 Nougat)
-- **Target SDK:** 34 (Android 14)
-- **Dependencias Clave:**
-  - `com.google.android.gms:play-services-location`: Geolocalización precisa.
-  - `com.google.android.material:material`: Componentes de UI modernos.
-- **Gradle Plugin (AGP):** 9.1.0 - 9.3.2.
+## 3. Configuración Obligatoria del Dispositivo
+Para que la alerta emergente pueda desplegarse desde segundo plano o con la pantalla bloqueada, debes otorgar el permiso de superposición manualmente:
+1.  Conecta el celular a la PC e instala la app presionando **Run (▶)** en Android Studio.
+2.  En tu teléfono, mantén presionado el ícono de la aplicación instalada y entra a **Información de la aplicación** (ícono ℹ️).
+3.  Busca la opción **Aparecer encima** (o *Mostrar sobre otras aplicaciones* / *Draw over other apps*).
+4.  Activa el interruptor a **Permitido**.
 
 ---
 
-## 🚀 Instalación y Configuración
+## 4. Instrucciones para Ejecutar y Probar
 
-### 1. Clonar el repositorio
-```bash
-git clone https://github.com/tu-usuario/monitor-sismico-android.git
-```
+### Prueba 1: En Primer Plano
+1.  Abre la aplicación en el teléfono.
+2.  Acepta los permisos de **Ubicación** y **Notificaciones** cuando la app los solicite.
+3.  Activa el interruptor principal de la pantalla (**Monitoreo ACTIVO**).
+4.  Agita el teléfono con firmeza para superar el umbral de aceleración (**13.0 m/s²**).
+5.  Aparecerá la ventana de alerta. Presiona **"Ver ruta óptima de evacuación"** para abrir Google Maps.
 
-### 2. Solución a errores de AGP/Gradle
-Si encuentras el error `Unsupported class file major version`, asegúrate de tener configurado **JDK 17 o superior** en Android Studio:
-`Settings` > `Build, Execution, Deployment` > `Build Tools` > `Gradle` > `Gradle JDK`.
-
-### 3. Permisos Críticos 🔑
-Para que el sistema funcione correctamente, es **obligatorio** conceder los siguientes permisos tras la instalación:
-1. **Ubicación (ACCESS_FINE_LOCATION):** Configurar como "Permitir siempre".
-2. **Notificaciones (POST_NOTIFICATIONS):** Necesario para el servicio de monitoreo activo.
-3. **Aparecer encima (SYSTEM_ALERT_WINDOW):** 
-   - Ve a `Ajustes` > `Aplicaciones` > `Monitor Sísmico`.
-   - Busca `Aparecer encima` o `Mostrar sobre otras aplicaciones`.
-   - Activa el interruptor (Vital para la alerta en pantalla bloqueada).
-
----
-
-## 🧪 Guía de Pruebas (Step-by-Step)
-
-### Prueba 1: Monitoreo en Primer Plano
-1. Abre la aplicación y activa el interruptor de **Monitoreo**.
-2. Verás una notificación persistente indicando que el sistema está activo.
-3. Agita el dispositivo con fuerza para superar el umbral de **13.0 m/s²**.
-4. La aplicación lanzará automáticamente el mapa con la ruta de evacuación.
-
-### Prueba 2: Pantalla Bloqueada y Segundo Plano
-1. Con el monitoreo activo, sal de la aplicación o bloquea el teléfono.
-2. Realiza una sacudida brusca (simulación de sismo).
-3. El sistema encenderá la pantalla automáticamente (`setTurnScreenOn`) y mostrará el diálogo de emergencia sobre el *lockscreen*.
-
----
-
-## 📄 Licencia
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
-
----
-**Desarrollado con fines preventivos y de seguridad ciudadana.** 🌎🛡️
+### Prueba 2: En Segundo Plano o Pantalla Bloqueada
+1.  Con el interruptor activado, minimiza la aplicación o bloquea la pantalla del celular.
+2.  Agita el teléfono con firmeza.
+3.  La pantalla se encenderá automáticamente mostrando la tarjeta emergente de alerta para iniciar la evacuación.
