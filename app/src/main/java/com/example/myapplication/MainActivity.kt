@@ -1,74 +1,86 @@
 package com.example.myapplication
 
-import android.graphics.Color
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.content.ContextCompat
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var sensorService: SensorService
+    private lateinit var switchMonitoreo: SwitchMaterial
     private lateinit var textoEstado: TextView
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.all { it }) {
+            iniciarServicio()
+        } else {
+            Toast.makeText(this, "Permisos necesarios denegados", Toast.LENGTH_SHORT).show()
+            switchMonitoreo.isChecked = false
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Configuración visual inicial
-        textoEstado = findViewById(R.id.textoEstado) // Asegúrate de tener este ID en tu XML
-        textoEstado.text = "Sistema en reposo"
-        textoEstado.setTextColor(Color.GREEN)
+        switchMonitoreo = findViewById(R.id.switchMonitoreo)
+        textoEstado = findViewById(R.id.textoEstado)
 
-        // Manejo de márgenes del sistema
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        switchMonitoreo.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                verificarPermisos()
+            } else {
+                detenerServicio()
+            }
+        }
+    }
+
+    private fun verificarPermisos() {
+        val permisos = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permisos.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // Instanciar e iniciar el servicio de captura[cite: 1]
-        sensorService = SensorService(this)
-        sensorService.iniciarMonitoreo()
+        val faltantes = permisos.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
 
-        // Hilo en segundo plano para revisar si el AdaptationEngine tomó una decisión
-        Thread {
-            while (true) {
-                if (AdaptationEngine.sismoDetectado) {
-                    runOnUiThread {
-                        activarModoEvacuacion()
-                    }
-                    // Detener el bucle una vez que se activa el sismo para no sobresaturar la UI
-                    break
-                }
-                Thread.sleep(500) // Revisa cada medio segundo
-            }
-        }.start()
+        if (faltantes.isEmpty()) {
+            iniciarServicio()
+        } else {
+            requestPermissionLauncher.launch(faltantes.toTypedArray())
+        }
     }
 
-    // Modificar alguna funcionalidad o comportamiento del sistema de manera observable[cite: 1]
-    private fun activarModoEvacuacion() {
-        // 1. Cambiar el texto y el color de la interfaz
-        textoEstado.text = "¡SISMO DETECTADO!\nRuta de evacuación activa"
-        textoEstado.setTextColor(Color.RED)
-        textoEstado.textSize = 28f
+    private fun iniciarServicio() {
+        textoEstado.text = "Monitoreo ACTIVO en 2do plano"
+        textoEstado.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
 
-        // El fondo cambia a negro para resaltar
-        findViewById<android.view.View>(R.id.main).setBackgroundColor(Color.BLACK)
-
-        // 2. Modificación de hardware: Forzar el brillo de la pantalla al máximo
-        val layoutParams = window.attributes
-        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
-        window.attributes = layoutParams
-
-        // (Opcional) Aquí cargarías tu imagen de mapa de evacuación de la UNI
+        val intent = Intent(this, SensorService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // Limpiar recursos para evitar bloqueo innecesario[cite: 1]
-        sensorService.detenerMonitoreo()
+    private fun detenerServicio() {
+        textoEstado.text = "Sistema inactivo"
+        textoEstado.setTextColor(android.graphics.Color.parseColor("#AAAAAA"))
+
+        val intent = Intent(this, SensorService::class.java)
+        stopService(intent)
     }
 }

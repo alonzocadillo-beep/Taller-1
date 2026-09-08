@@ -1,43 +1,54 @@
 package com.example.myapplication
 
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
 
-class SensorService(context: Context) : SensorEventListener {
+class SensorService : Service() {
 
-    private val sensorManager: SensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private lateinit var contextManager: ContextManager
 
-    // Conexión con la siguiente fase del pipeline
-    private val contextManager = ContextManager()
+    override fun onCreate() {
+        super.onCreate()
+        crearCanalNotificacion()
 
-    fun iniciarMonitoreo() {
-        accelerometer?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        val notificacion = NotificationCompat.Builder(this, "canal_sismo")
+            .setContentTitle("Monitor Sísmico Activo")
+            .setContentText("Detectando vibraciones y ubicación...")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        startForeground(1, notificacion)
+
+        contextManager = ContextManager(this)
+        contextManager.iniciarMonitoreo()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::contextManager.isInitialized) {
+            contextManager.detenerMonitoreo()
         }
     }
 
-    fun detenerMonitoreo() {
-        sensorManager.unregisterListener(this)
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
     }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        event?.let {
-            if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-                val x = it.values[0]
-                val y = it.values[1]
-                val z = it.values[2]
-
-                // Procesar automáticamente los cambios producidos delegando la tarea
-                contextManager.procesarVibracion(x, y, z)
-            }
+    private fun crearCanalNotificacion() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                "canal_sismo",
+                "Monitoreo de Sismos",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(canal)
         }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // No requerido para este alcance mínimo[cite: 1]
     }
 }
