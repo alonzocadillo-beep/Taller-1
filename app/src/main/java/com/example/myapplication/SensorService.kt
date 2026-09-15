@@ -29,6 +29,15 @@ class SensorService : Service() {
         contextManager.iniciarMonitoreo()
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "ACTION_SIMULAR_SISMO") {
+            if (::contextManager.isInitialized) {
+                contextManager.ejecutarSimulacion()
+            }
+        }
+        return START_STICKY
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (::contextManager.isInitialized) {

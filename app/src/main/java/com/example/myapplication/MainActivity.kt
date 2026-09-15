@@ -11,12 +11,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var textoEstado: TextView
     private lateinit var switchMonitoreo: SwitchMaterial
+    private lateinit var btnSimular: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,15 +26,26 @@ class MainActivity : AppCompatActivity() {
 
         textoEstado = findViewById(R.id.textoEstado)
         switchMonitoreo = findViewById(R.id.switchMonitoreo)
+        btnSimular = findViewById(R.id.btnSimular)
 
         solicitarPermisos()
 
-        // Escuchador de cambios en el switch de Material Design
         switchMonitoreo.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 iniciarServicio()
             } else {
                 detenerServicio()
+            }
+        }
+
+        btnSimular.setOnClickListener {
+            if (switchMonitoreo.isChecked) {
+                val intent = Intent(this, SensorService::class.java).apply {
+                    action = "ACTION_SIMULAR_SISMO"
+                }
+                startService(intent)
+            } else {
+                Toast.makeText(this, "Activa el monitoreo primero", Toast.LENGTH_SHORT).show()
             }
         }
     }
