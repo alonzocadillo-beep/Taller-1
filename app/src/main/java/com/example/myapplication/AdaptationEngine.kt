@@ -1,11 +1,11 @@
 package com.example.myapplication
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import kotlin.math.*
@@ -55,52 +55,52 @@ class AdaptationEngine(private val context: Context) {
     }
 
     private fun mostrarAlertaInteractiva(latDestino: Double, lonDestino: Double) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "alerta_sismo_opcion"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Alertas Interactivas de Evacuación",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Canal prioritario con opción de evacuación"
-                setBypassDnd(true)
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Intent que abre Google Maps con la ruta de evacuación
-        val gmmIntentUri = Uri.parse("google.navigation:q=$latDestino,$lonDestino&mode=w")
-        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
-            setPackage("com.google.android.apps.maps")
+        val intent = Intent(context, AlertaSismoActivity::class.java).apply {
+            putExtra("LATITUD", latDestino)
+            putExtra("LONGITUD", lonDestino)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            mapIntent,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Construcción de la notificación flotante con botón interactivo
+        val channelId = "sismo_emergency_channel"
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Canal de notificación de alta prioridad (Alarma)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Alertas de Emergencia Sísmicas",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // Configuración de FullScreenIntent para ejecutar sobre la pantalla actual o de bloqueo
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle("¡SISMO DETECTADO!")
-            .setContentText("¿Deseas ver la ruta de evacuación más cercana?")
+            .setContentText("Toca para ver la ruta de evacuación")
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setFullScreenIntent(pendingIntent, true)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent) // Al tocar el cuerpo de la notificación abre el mapa
-            .setFullScreenIntent(pendingIntent, true) // Muestra el banner emergente arriba de la pantalla
-            .addAction(
-                android.R.drawable.ic_menu_directions,
-                "VER RUTA ÓPTIMA",
-                pendingIntent
-            ) // Botón explícito de acción
 
-        notificationManager.notify(1001, builder.build())
+        notificationManager.notify(999, builder.build())
+
+        // Lanzamiento directo secundario
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
