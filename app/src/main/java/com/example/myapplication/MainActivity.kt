@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         btnSimular = findViewById(R.id.btnSimular)
 
         solicitarPermisos()
+        verificarPermisoSuperposicion()
 
         switchMonitoreo.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
@@ -66,6 +69,24 @@ class MainActivity : AppCompatActivity() {
 
         if (faltantes.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, faltantes.toTypedArray(), 100)
+        }
+    }
+
+    private fun verificarPermisoSuperposicion() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Toast.makeText(
+                    this,
+                    "Permite 'Mostrar sobre otras apps' para las alertas de emergencia",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            }
         }
     }
 

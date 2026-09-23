@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,7 +14,7 @@ class AdaptationEngine(private val context: Context) {
 
     fun evaluarAdaptacion(sismoDetectado: Boolean, latActual: Double, lonActual: Double) {
         if (sismoDetectado && latActual != 0.0 && lonActual != 0.0) {
-            // Simulamos zonas seguras cercanas
+            // Zonas seguras simuladas cerca del usuario
             val zonasSegurasLocales = listOf(
                 Pair(latActual + 0.0015, lonActual + 0.0010),
                 Pair(latActual - 0.0010, lonActual - 0.0012),
@@ -21,11 +22,11 @@ class AdaptationEngine(private val context: Context) {
             )
 
             val mejorZona = encontrarZonaMasCercana(latActual, lonActual, zonasSegurasLocales)
-            
-            // REQUERIMIENTO: Mostrar mapa de inmediato
+
+            // Mostrar mapa de evacuación de inmediato
             lanzarActividadAlerta(latActual, lonActual, mejorZona.first, mejorZona.second)
 
-            // Respaldo por notificación
+            // Notificación de alta prioridad como respaldo (pantalla bloqueada / background)
             mostrarNotificacionRespaldo(latActual, lonActual, mejorZona.first, mejorZona.second)
         }
     }
@@ -38,12 +39,21 @@ class AdaptationEngine(private val context: Context) {
             putExtra("lonDestino", lonDest)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    private fun encontrarZonaMasCercana(lat: Double, lon: Double, candidatas: List<Pair<Double, Double>>): Pair<Double, Double> {
+    private fun encontrarZonaMasCercana(
+        lat: Double,
+        lon: Double,
+        candidatas: List<Pair<Double, Double>>
+    ): Pair<Double, Double> {
         var zonaOptima = candidatas[0]
         var distanciaMinima = Double.MAX_VALUE
+
         for (zona in candidatas) {
             val d = calcularDistancia(lat, lon, zona.first, zona.second)
             if (d < distanciaMinima) {
@@ -58,17 +68,33 @@ class AdaptationEngine(private val context: Context) {
         val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2) * sin(dLon / 2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return r * c
     }
 
-    private fun mostrarNotificacionRespaldo(latOri: Double, lonOri: Double, latDest: Double, lonDest: Double) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "alerta_sismo_opcion"
+    private fun mostrarNotificacionRespaldo(
+        latOri: Double,
+        lonOri: Double,
+        latDest: Double,
+        lonDest: Double
+    ) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "sismo_emergency_channel"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Emergencia Sismo", NotificationManager.IMPORTANCE_HIGH)
+            val channel = NotificationChannel(
+                channelId,
+                "Alertas de Emergencia Sísmicas",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Canal prioritario de evacuación"
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -77,16 +103,26 @@ class AdaptationEngine(private val context: Context) {
             putExtra("lonOrigen", lonOri)
             putExtra("latDestino", latDest)
             putExtra("lonDestino", lonDest)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("🚨 SISMO DETECTADO")
+            .setContentTitle("¡SISMO DETECTADO!")
             .setContentText("Toca para abrir la ruta de evacuación.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
 
         notificationManager.notify(1001, builder.build())
     }
