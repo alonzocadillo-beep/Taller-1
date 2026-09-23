@@ -14,6 +14,7 @@ class AdaptationEngine(private val context: Context) {
 
     fun evaluarAdaptacion(sismoDetectado: Boolean, latActual: Double, lonActual: Double) {
         if (sismoDetectado && latActual != 0.0 && lonActual != 0.0) {
+            // Zonas seguras simuladas cerca del usuario
             val zonasSegurasLocales = listOf(
                 Pair(latActual + 0.0015, lonActual + 0.0010),
                 Pair(latActual - 0.0010, lonActual - 0.0012),
@@ -21,7 +22,27 @@ class AdaptationEngine(private val context: Context) {
             )
 
             val mejorZona = encontrarZonaMasCercana(latActual, lonActual, zonasSegurasLocales)
-            mostrarAlertaInteractiva(mejorZona.first, mejorZona.second)
+
+            // Mostrar mapa de evacuación de inmediato
+            lanzarActividadAlerta(latActual, lonActual, mejorZona.first, mejorZona.second)
+
+            // Notificación de alta prioridad como respaldo (pantalla bloqueada / background)
+            mostrarNotificacionRespaldo(latActual, lonActual, mejorZona.first, mejorZona.second)
+        }
+    }
+
+    private fun lanzarActividadAlerta(latOri: Double, lonOri: Double, latDest: Double, lonDest: Double) {
+        val intent = Intent(context, AlertaSismoActivity::class.java).apply {
+            putExtra("latOrigen", latOri)
+            putExtra("lonOrigen", lonOri)
+            putExtra("latDestino", latDest)
+            putExtra("lonDestino", lonDest)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -54,10 +75,34 @@ class AdaptationEngine(private val context: Context) {
         return r * c
     }
 
-    private fun mostrarAlertaInteractiva(latDestino: Double, lonDestino: Double) {
+    private fun mostrarNotificacionRespaldo(
+        latOri: Double,
+        lonOri: Double,
+        latDest: Double,
+        lonDest: Double
+    ) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "sismo_emergency_channel"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Alertas de Emergencia Sísmicas",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Canal prioritario de evacuación"
+                setBypassDnd(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
         val intent = Intent(context, AlertaSismoActivity::class.java).apply {
-            putExtra("LATITUD", latDestino)
-            putExtra("LONGITUD", lonDestino)
+            putExtra("latOrigen", latOri)
+            putExtra("lonOrigen", lonOri)
+            putExtra("latDestino", latDest)
+            putExtra("lonDestino", lonDest)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -68,39 +113,17 @@ class AdaptationEngine(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = "sismo_emergency_channel"
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Canal de notificación de alta prioridad (Alarma)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Alertas de Emergencia Sísmicas",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setBypassDnd(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Configuración de FullScreenIntent para ejecutar sobre la pantalla actual o de bloqueo
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle("¡SISMO DETECTADO!")
-            .setContentText("Toca para ver la ruta de evacuación")
+            .setContentText("Toca para abrir la ruta de evacuación.")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(pendingIntent, true)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
 
-        notificationManager.notify(999, builder.build())
-
-        // Lanzamiento directo secundario
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        notificationManager.notify(1001, builder.build())
     }
 }

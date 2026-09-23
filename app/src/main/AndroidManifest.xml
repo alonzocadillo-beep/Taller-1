@@ -32,17 +32,15 @@
             </intent-filter>
         </activity>
 
-        <!-- ========================================== -->
-        <!-- ESTO ES LO QUE SE AGREGÓ EN EL PASO 3      -->
-        <!-- Registramos tu nueva pantalla flotante     -->
-        <!-- ========================================== -->
         <activity
             android:name=".AlertaSismoActivity"
-            android:theme="@style/Theme.AppCompat.Dialog"
             android:excludeFromRecents="true"
+            android:exported="false"
             android:launchMode="singleInstance"
-            android:showOnLockScreen="true"/>
-        <!-- ========================================== -->
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.MyApplication" />
 
         <service
             android:name=".SensorService"

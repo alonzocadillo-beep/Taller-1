@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="#0B0F19">
 
-    <!-- Fondo del encabezado (Header) -->
     <View
         android:id="@+id/headerBg"
         android:layout_width="match_parent"
@@ -14,7 +13,6 @@
         android:background="#1A233A"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Título Principal -->
     <TextView
         android:id="@+id/tituloApp"
         android:layout_width="wrap_content"
@@ -28,7 +26,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Subtítulo -->
     <TextView
         android:id="@+id/subtituloApp"
         android:layout_width="wrap_content"
@@ -41,7 +38,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tituloApp" />
 
-    <!-- Tarjeta Central Flotante (Control Panel) -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -61,43 +57,49 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="40dp">
+            android:padding="32dp">
 
             <TextView
                 android:id="@+id/textoEstado"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="20dp"
                 android:text="Sistema inactivo"
                 android:textColor="#8A9BB4"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switchMonitoreo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:scaleX="1.8"
-                android:scaleY="1.8"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
                 app:thumbTint="@color/material_dynamic_neutral_variant80"
                 app:trackTint="@color/material_dynamic_neutral50" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSimular"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Simular Sismo"
+                android:textColor="#FF5252"
+                app:rippleColor="#40FF5252" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Texto informativo en el pie de página -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="40dp"
         android:layout_marginBottom="48dp"
         android:gravity="center"
-        android:text="Mantén el interruptor encendido. La aplicación monitoreará vibraciones en segundo plano sin gastar demasiada batería."
+        android:text="Mantén el interruptor encendido para monitoreo 24/7."
         android:textColor="#5C6D8A"
-        android:textSize="14sp"
-        android:lineSpacingExtra="4dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -23,7 +23,7 @@ class ContextManager(private val context: Context) : SensorEventListener {
     private var lonActual: Double = 0.0
     private var alertaEjecutada = false
 
-    private val UMBRAL_SISMO = 18.0
+    private val UMBRAL_SISMO = 13.0 // Calibrado según el README a 13.0 m/s²
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
@@ -36,8 +36,6 @@ class ContextManager(private val context: Context) : SensorEventListener {
 
     fun iniciarMonitoreo() {
         alertaEjecutada = false
-
-        // Intentar obtener la última ubicación guardada en el GPS del teléfono al iniciar
         try {
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
@@ -70,23 +68,30 @@ class ContextManager(private val context: Context) : SensorEventListener {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
+    fun ejecutarSimulacion() {
+        dispararAlerta("¡SIMULACIÓN DE SISMO!")
+    }
+
+    private fun dispararAlerta(mensaje: String) {
+        if (!alertaEjecutada) {
+            alertaEjecutada = true
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
+            }
+            // Evalúa la adaptación con la posición actual
+            adaptationEngine.evaluarAdaptacion(true, latActual, lonActual)
+        }
+    }
+
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             val x = event.values[0]
             val y = event.values[1]
             val z = event.values[2]
-
             val aceleracion = sqrt((x * x + y * y + z * z).toDouble())
 
             if (aceleracion > UMBRAL_SISMO && !alertaEjecutada) {
-                alertaEjecutada = true
-
-                Handler(Looper.getMainLooper()).post {
-                    Toast.makeText(context, "¡Sismo detectado! Calculando ruta óptima cercana...", Toast.LENGTH_SHORT).show()
-                }
-
-                // Evalúa la adaptación con la posición actual detectada
-                adaptationEngine.evaluarAdaptacion(true, latActual, lonActual)
+                dispararAlerta("¡Sismo detectado! Activando evacuación inmediata...")
             }
         }
     }
