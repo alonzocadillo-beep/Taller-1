@@ -5,11 +5,67 @@
     android:layout_height="match_parent"
     android:background="#1A1A1A">
 
-    <fragment
-        android:id="@+id/mapFragment"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <!-- Panel tipo "mapa" sin SDK (evita crash por falta de API key) -->
+    <FrameLayout
+        android:id="@+id/panelMapa"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:background="#2A2A2A"
+        app:layout_constraintBottom_toTopOf="@+id/accionesAlerta"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RUTA DE EVACUACIÓN"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textoOrigen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Tu ubicación: —"
+                android:textColor="#80CBC4"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="12dp"
+                android:text="↓ ruta segura (verde)"
+                android:textColor="#4CAF50"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/textoDestino"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Zona segura: —"
+                android:textColor="#81C784"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:text="Zonas inseguras simuladas en rojo se mostrarán en Google Maps."
+                android:textColor="#EF9A9A"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </FrameLayout>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardAlerta"
@@ -39,7 +95,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Sigue la ruta verde hacia la zona segura."
+                android:text="Evento sísmico detectado. Sigue la ruta hacia la zona segura."
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -61,7 +117,7 @@
             android:id="@+id/btnAbrirRuta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Abrir ruta en Maps"
+            android:text="Abrir ruta en Google Maps"
             app:cornerRadius="24dp" />
 
         <com.google.android.material.button.MaterialButton
@@ -70,7 +126,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Entendido"
+            android:text="Entendido / silenciar alarma"
             app:cornerRadius="24dp" />
     </LinearLayout>
 

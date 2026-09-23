@@ -1,7 +1,10 @@
 package com.example.myapplication
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
@@ -19,14 +22,25 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 class MainActivity : AppCompatActivity() {
 
     private lateinit var textoEstado: TextView
+    private lateinit var textoEvento: TextView
     private lateinit var switchMonitoreo: SwitchMaterial
     private lateinit var btnSimular: MaterialButton
+
+    private val eventoReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != ContextManager.ACTION_EVENTO_DETECTADO) return
+            val etiqueta = intent.getStringExtra(ContextManager.EXTRA_ETIQUETA_EVENTO) ?: "—"
+            val tipoNombre = intent.getStringExtra(ContextManager.EXTRA_TIPO_EVENTO)
+            actualizarTextoEvento(etiqueta, tipoNombre)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         textoEstado = findViewById(R.id.textoEstado)
+        textoEvento = findViewById(R.id.textoEvento)
         switchMonitoreo = findViewById(R.id.switchMonitoreo)
         btnSimular = findViewById(R.id.btnSimular)
 
@@ -51,6 +65,38 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Activa el monitoreo primero", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(ContextManager.ACTION_EVENTO_DETECTADO)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(eventoReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(eventoReceiver, filter)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        try {
+            unregisterReceiver(eventoReceiver)
+        } catch (_: IllegalArgumentException) {
+            // Ya estaba desregistrado
+        }
+    }
+
+    private fun actualizarTextoEvento(etiqueta: String, tipoNombre: String?) {
+        textoEvento.text = "Evento: $etiqueta"
+        textoEvento.setTextColor(
+            when (tipoNombre) {
+                TipoEvento.GOLPE.name -> Color.parseColor("#FFC107")
+                TipoEvento.MOVIMIENTO_BRUSCO_AISLADO.name -> Color.parseColor("#FF9800")
+                TipoEvento.EVENTO_SISMICO.name -> Color.parseColor("#FF5252")
+                else -> Color.parseColor("#8A9BB4")
+            }
+        )
     }
 
     private fun solicitarPermisos() {
@@ -93,6 +139,8 @@ class MainActivity : AppCompatActivity() {
     private fun iniciarServicio() {
         textoEstado.text = "Monitoreo ACTIVO"
         textoEstado.setTextColor(Color.parseColor("#00E676"))
+        textoEvento.text = "Evento: —"
+        textoEvento.setTextColor(Color.parseColor("#8A9BB4"))
 
         val intent = Intent(this, SensorService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -107,6 +155,8 @@ class MainActivity : AppCompatActivity() {
     private fun detenerServicio() {
         textoEstado.text = "Sistema inactivo"
         textoEstado.setTextColor(Color.parseColor("#8A9BB4"))
+        textoEvento.text = "Evento: —"
+        textoEvento.setTextColor(Color.parseColor("#8A9BB4"))
 
         val intent = Intent(this, SensorService::class.java)
         stopService(intent)
