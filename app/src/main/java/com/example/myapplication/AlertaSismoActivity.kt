@@ -2,13 +2,13 @@ package com.example.myapplication
 
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.Ringtone
-import android.media.RingtoneManager
+import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -19,8 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 
 /**
- * Pantalla de emergencia sin Maps SDK embebido (evita crash por falta de API key).
- * La ruta real se abre en Google Maps; aquí suena alarma tipo alerta sísmica.
+ * Pantalla de emergencia: alarma con beep/zumbido repetido (no tono de alarma del sistema).
  */
 class AlertaSismoActivity : AppCompatActivity() {
 
@@ -29,8 +28,23 @@ class AlertaSismoActivity : AppCompatActivity() {
     private var latOrig: Double = 0.0
     private var lonOrig: Double = 0.0
 
-    private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
+    private var toneGenerator: ToneGenerator? = null
+    private val beepHandler = Handler(Looper.getMainLooper())
+    private var beepActivo = false
+
+    /** Beep corto + pausa = efecto de zumbido de alerta. */
+    private val beepRunnable = object : Runnable {
+        override fun run() {
+            if (!beepActivo) return
+            try {
+                // Tono tipo sirena/alerta corta (beep insistente)
+                toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 350)
+            } catch (_: Exception) {
+            }
+            beepHandler.postDelayed(this, 450)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,7 +97,6 @@ class AlertaSismoActivity : AppCompatActivity() {
         try {
             startActivity(mapIntent)
         } catch (_: Exception) {
-            // Fallback si no hay app de Maps
             val browser = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$latDest,$lonDest&travelmode=walking")
@@ -103,7 +116,7 @@ class AlertaSismoActivity : AppCompatActivity() {
                 getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
 
-            val patronVibracion = longArrayOf(0, 800, 200, 800, 200, 800, 200, 800)
+            val patronVibracion = longArrayOf(0, 400, 150, 400, 150, 400)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator?.vibrate(VibrationEffect.createWaveform(patronVibracion, 0))
             } else {
@@ -115,45 +128,27 @@ class AlertaSismoActivity : AppCompatActivity() {
         }
 
         try {
-            // Alarma del sistema (tono de alarma, stream ALARM — estilo alerta sísmica)
-            var alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            if (alarmUri == null) {
-                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-            }
-            if (alarmUri == null) {
-                alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            }
-
-            ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
-            if (ringtone == null) {
-                Toast.makeText(this, "No se pudo cargar tono de alarma", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                ringtone?.isLooping = true
-                ringtone?.audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            } else {
-                @Suppress("DEPRECATION")
-                ringtone?.streamType = AudioManager.STREAM_ALARM
-            }
-            ringtone?.play()
+            // Volumen al máximo del stream de alarma (0–100 en ToneGenerator)
+            toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+            beepActivo = true
+            beepHandler.post(beepRunnable)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Alarma no disponible en este dispositivo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No se pudo iniciar el beep de alerta", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun detenerAlarmaYVibracion() {
+        beepActivo = false
+        beepHandler.removeCallbacks(beepRunnable)
         try {
-            vibrator?.cancel()
+            toneGenerator?.stopTone()
+            toneGenerator?.release()
         } catch (_: Exception) {
         }
+        toneGenerator = null
         try {
-            ringtone?.stop()
+            vibrator?.cancel()
         } catch (_: Exception) {
         }
     }
