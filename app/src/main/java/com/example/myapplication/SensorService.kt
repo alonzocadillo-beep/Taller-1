@@ -18,7 +18,7 @@ class SensorService : Service() {
 
         val notificacion = NotificationCompat.Builder(this, "canal_sismo")
             .setContentTitle("Monitor Sísmico Activo")
-            .setContentText("Detectando vibraciones y ubicación...")
+            .setContentText("Sensor local + reportes IGP…")
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
@@ -30,9 +30,16 @@ class SensorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "ACTION_SIMULAR_SISMO") {
-            if (::contextManager.isInitialized) {
-                contextManager.ejecutarSimulacion()
+        when (intent?.action) {
+            "ACTION_SIMULAR_SISMO" -> {
+                if (::contextManager.isInitialized) {
+                    contextManager.ejecutarSimulacion()
+                }
+            }
+            "ACTION_REFRESH_PROFILE" -> {
+                if (::contextManager.isInitialized) {
+                    contextManager.refrescarPerfilSiActivo()
+                }
             }
         }
         return START_STICKY
@@ -45,9 +52,7 @@ class SensorService : Service() {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
     private fun crearCanalNotificacion() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

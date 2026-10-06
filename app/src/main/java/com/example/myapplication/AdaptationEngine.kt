@@ -7,36 +7,121 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
-import kotlin.math.*
+import java.util.concurrent.Executors
 
 class AdaptationEngine(private val context: Context) {
 
-    fun evaluarAdaptacion(sismoDetectado: Boolean, latActual: Double, lonActual: Double) {
-        if (sismoDetectado && latActual != 0.0 && lonActual != 0.0) {
-            // Zonas seguras simuladas cerca del usuario
-            val zonasSegurasLocales = listOf(
-                Pair(latActual + 0.0015, lonActual + 0.0010),
-                Pair(latActual - 0.0010, lonActual - 0.0012),
-                Pair(latActual + 0.0008, lonActual - 0.0015)
+    private val safeZones = SafeZoneRepository()
+    private val settings = AppSettings(context)
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    fun evaluarAdaptacion(
+        sismoDetectado: Boolean,
+        latActual: Double,
+        lonActual: Double,
+        fuente: String = "local",
+        detalle: String = "",
+        eventId: Long = System.currentTimeMillis()
+    ) {
+        if (!sismoDetectado) return
+
+        val sinGps = latActual == 0.0 && lonActual == 0.0
+        if (sinGps) {
+            publicarAlerta(
+                latActual, lonActual,
+                SafeZone("Ubicación pendiente de GPS", 0.0, 0.0, "sin_gps"),
+                -1.0, fuente, detalle, true, eventId
             )
+            return
+        }
 
-            val mejorZona = encontrarZonaMasCercana(latActual, lonActual, zonasSegurasLocales)
-
-            // Mostrar mapa de evacuación de inmediato
-            lanzarActividadAlerta(latActual, lonActual, mejorZona.first, mejorZona.second)
-
-            // Notificación de alta prioridad como respaldo (pantalla bloqueada / background)
-            mostrarNotificacionRespaldo(latActual, lonActual, mejorZona.first, mejorZona.second)
+        // OSM/red en background para no bloquear UI / ANR
+        executor.execute {
+            val favorita = settings.favoriteSafeZone()
+            val (zona, distKm) = try {
+                safeZones.encontrarMejor(latActual, lonActual, favorita)
+            } catch (_: Exception) {
+                // Fallback inmediato si falla red
+                SafeZone(
+                    nombre = "Espacio abierto cercano (estimado)",
+                    lat = latActual + 0.00075,
+                    lon = lonActual + 0.00055,
+                    tipo = "estimado_local"
+                ) to SafeZoneRepository.distanciaKm(
+                    latActual, lonActual,
+                    latActual + 0.00075, lonActual + 0.00055
+                )
+            }
+            mainHandler.post {
+                publicarAlerta(
+                    latActual, lonActual, zona, distKm,
+                    fuente, detalle, false, eventId
+                )
+            }
         }
     }
 
-    private fun lanzarActividadAlerta(latOri: Double, lonOri: Double, latDest: Double, lonDest: Double) {
+    private fun publicarAlerta(
+        latOri: Double,
+        lonOri: Double,
+        zona: SafeZone,
+        distKm: Double,
+        fuente: String,
+        detalle: String,
+        modoDegradado: Boolean,
+        eventId: Long
+    ) {
+        lanzarActividadAlerta(
+            latOri = latOri,
+            lonOri = lonOri,
+            latDest = zona.lat,
+            lonDest = zona.lon,
+            zonaNombre = zona.nombre,
+            distanciaKm = distKm,
+            fuente = fuente,
+            detalle = detalle,
+            modoDegradado = modoDegradado,
+            eventId = eventId
+        )
+        mostrarNotificacionRespaldo(
+            latOri = latOri,
+            lonOri = lonOri,
+            latDest = zona.lat,
+            lonDest = zona.lon,
+            zonaNombre = zona.nombre,
+            fuente = fuente,
+            modoDegradado = modoDegradado,
+            eventId = eventId
+        )
+    }
+
+    private fun lanzarActividadAlerta(
+        latOri: Double,
+        lonOri: Double,
+        latDest: Double,
+        lonDest: Double,
+        zonaNombre: String,
+        distanciaKm: Double,
+        fuente: String,
+        detalle: String,
+        modoDegradado: Boolean,
+        eventId: Long
+    ) {
         val intent = Intent(context, AlertaSismoActivity::class.java).apply {
             putExtra("latOrigen", latOri)
             putExtra("lonOrigen", lonOri)
             putExtra("latDestino", latDest)
             putExtra("lonDestino", lonDest)
+            putExtra("zonaNombre", zonaNombre)
+            putExtra("distanciaKm", distanciaKm)
+            putExtra("fuente", fuente)
+            putExtra("detalle", detalle)
+            putExtra("modoDegradado", modoDegradado)
+            putExtra("eventId", eventId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         try {
@@ -46,40 +131,15 @@ class AdaptationEngine(private val context: Context) {
         }
     }
 
-    private fun encontrarZonaMasCercana(
-        lat: Double,
-        lon: Double,
-        candidatas: List<Pair<Double, Double>>
-    ): Pair<Double, Double> {
-        var zonaOptima = candidatas[0]
-        var distanciaMinima = Double.MAX_VALUE
-
-        for (zona in candidatas) {
-            val d = calcularDistancia(lat, lon, zona.first, zona.second)
-            if (d < distanciaMinima) {
-                distanciaMinima = d
-                zonaOptima = zona
-            }
-        }
-        return zonaOptima
-    }
-
-    private fun calcularDistancia(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return r * c
-    }
-
     private fun mostrarNotificacionRespaldo(
         latOri: Double,
         lonOri: Double,
         latDest: Double,
-        lonDest: Double
+        lonDest: Double,
+        zonaNombre: String,
+        fuente: String,
+        modoDegradado: Boolean,
+        eventId: Long
     ) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -103,6 +163,10 @@ class AdaptationEngine(private val context: Context) {
             putExtra("lonOrigen", lonOri)
             putExtra("latDestino", latDest)
             putExtra("lonDestino", lonDest)
+            putExtra("zonaNombre", zonaNombre)
+            putExtra("fuente", fuente)
+            putExtra("modoDegradado", modoDegradado)
+            putExtra("eventId", eventId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -113,10 +177,21 @@ class AdaptationEngine(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val titulo = if (fuente.contains("igp", ignoreCase = true)) {
+            "¡ALERTA OFICIAL IGP!"
+        } else {
+            "¡SISMO DETECTADO!"
+        }
+        val texto = if (modoDegradado) {
+            "Sin GPS preciso. Toca para ver instrucciones de evacuación."
+        } else {
+            "Zona segura: $zonaNombre. Toca para abrir la ruta."
+        }
+
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("¡SISMO DETECTADO!")
-            .setContentText("Toca para abrir la ruta de evacuación.")
+            .setContentTitle(titulo)
+            .setContentText(texto)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setDefaults(NotificationCompat.DEFAULT_ALL)

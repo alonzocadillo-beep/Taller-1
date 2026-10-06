@@ -1,47 +1,83 @@
-# Guía de Ejecución - Monitor Sísmico
+# Monitor Sísmico — Guía de Ejecución
 
-Instrucciones para compilar, instalar y probar la aplicación en un dispositivo Android.
-
----
-
-## 1. Requisitos Previos
-*   **Android Studio:** Jellyfish / Ladybug (o superior).
-*   **Dispositivo de prueba:** Teléfono físico con **Android 8.0 (API 26)** o superior, sensor acelerómetro, GPS activado y la aplicación Google Maps instalada.
+App Android de **alerta y evacuación** con arquitectura adaptativa:
+- **Contexto local:** acelerómetro + GPS
+- **Contexto oficial (Opción A):** reportes públicos del **IGP** (capa alineada a difusión **INDECI / SASPe**)
+- **Adaptación:** zona segura real (catálogo embebido) + Google Maps + aviso a contacto
 
 ---
 
-## 2. Configuración en Android Studio
-
-### Abrir el proyecto
-*   Abre Android Studio, selecciona **Open** y elige la carpeta del proyecto.
-
-### Solución a errores de compatibilidad de Gradle (AGP)
-Si al sincronizar aparece el error: `The project is using an incompatible version (AGP 9.3.2)...`
-1.  Abre el archivo `gradle/libs.versions.toml` (o `build.gradle.kts`).
-2.  Cambia la versión de **agp** de `9.3.2` a `9.1.0` (o la versión soportada por tu Android Studio).
-3.  Haz clic en **Sync Now** en la barra superior.
+## 1. Requisitos
+* Android Studio Jellyfish / Ladybug (o superior)
+* Teléfono físico Android 8+ (API 28+), acelerómetro, GPS, Google Maps
+* Internet (para consultar el feed IGP)
 
 ---
 
-## 3. Configuración Obligatoria del Dispositivo
-Para que la alerta emergente pueda desplegarse desde segundo plano o con la pantalla bloqueada, debes otorgar el permiso de superposición manualmente:
-1.  Conecta el celular a la PC e instala la app presionando **Run (▶)** en Android Studio.
-2.  En tu teléfono, mantén presionado el ícono de la aplicación instalada y entra a **Información de la aplicación** (ícono ℹ️).
-3.  Busca la opción **Aparecer encima** (o *Mostrar sobre otras aplicaciones* / *Draw over other apps*).
-4.  Activa el interruptor a **Permitido**.
+## 2. Abrir y sincronizar
+1. Abre la carpeta del proyecto en Android Studio.
+2. Si falla AGP (`9.3.2`), baja a `9.1.0` en `gradle/libs.versions.toml` y Sync.
 
 ---
 
-## 4. Instrucciones para Ejecutar y Probar
+## 3. Permisos del dispositivo
+1. Instala con **Run (▶)**.
+2. Acepta **Ubicación** y **Notificaciones**.
+3. Activa **Aparecer encima / Mostrar sobre otras apps**.
+4. En la app usa **Revisar permisos** si el estado queda en amarillo (modo degradado).
 
-### Prueba 1: En Primer Plano
-1.  Abre la aplicación en el teléfono.
-2.  Acepta los permisos de **Ubicación** y **Notificaciones** cuando la app los solicite.
-3.  Activa el interruptor principal de la pantalla (**Monitoreo ACTIVO**).
-4.  Agita el teléfono con firmeza para superar el umbral de aceleración (**13.0 m/s²**).
-5.  Aparecerá la ventana de alerta. Presiona **"Ver ruta óptima de evacuación"** para abrir Google Maps.
+---
 
-### Prueba 2: En Segundo Plano o Pantalla Bloqueada
-1.  Con el interruptor activado, minimiza la aplicación o bloquea la pantalla del celular.
-2.  Agita el teléfono con firmeza.
-3.  La pantalla se encenderá automáticamente mostrando la tarjeta emergente de alerta para iniciar la evacuación.
+## 4. Cómo probar
+
+### Sensor local
+1. Activa **Monitoreo**.
+2. Agita el teléfono (umbral según sensibilidad en **Ajustes**).
+3. Solo **EVENTO SÍSMICO** dispara evacuación (golpes/bruscos no).
+
+### Simulación
+1. Con monitoreo activo → **Simular Sismo**.
+
+### Feed IGP (INDECI)
+1. Con internet, la tarjeta muestra el último reporte IGP.
+2. Si aparece un sismo **nuevo**, reciente, con magnitud ≥ umbral del perfil y cerca del usuario, dispara **ALERTA OFICIAL IGP**.
+3. La primera consulta solo muestra datos (no alerta por sismos viejos).
+
+### Comercial (casos de uso)
+| UC | Qué probar |
+|----|------------|
+| UC11 GPS retry | Simula sin GPS listo → espera / modo degradado a los ~25 s |
+| UC12 Falsos positivos | Perfil Conservador + cooldown 3 min |
+| UC13 Silenciar | En alerta → **Silenciar (mantener pantalla)** |
+| UC14 Historial | **Historial** + **Falsa alarma** |
+| UC15 Zonas reales | Destino con nombre de parque/plaza |
+| UC16 Contacto | Ajustes → teléfono → **Avisar contacto** |
+| UC17 Sensibilidad | Ajustes → Conservador / Normal / Sensible |
+| UC18 Permisos | Quita ubicación → estado degradado / Revisar permisos |
+| UC19 IGP | Texto IGP en home + alerta oficial si hay evento nuevo |
+
+---
+
+## 5. Fuente de datos IGP
+Endpoint ArcGIS público (Último sismo):
+
+`https://ide.igp.gob.pe/arcgis/rest/services/monitoreocensis/UltimoSismo/MapServer/0/query`
+
+Narrativa del taller: datos de monitoreo **IGP** + capa de preparación/difusión **INDECI**. La app aporta la **adaptación personal** (ruta, UI, sensor local).
+
+---
+
+## 6. Arquitectura
+```
+MainActivity / Settings / History
+        │
+ SensorService (foreground)
+        │
+ ContextManager ─── EventClassifier (perfil)
+        │         ─── IgpEarthquakeClient (poll 60s)
+        │         ─── EventHistoryStore
+        ▼
+ AdaptationEngine ─── SafeZoneRepository
+        ▼
+ AlertaSismoActivity (Maps + SMS/share)
+```

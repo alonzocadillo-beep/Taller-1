@@ -1,31 +1,27 @@
 package com.example.myapplication
 
 /**
- * Criterio académico (taller):
- * - Umbral de pico: 13.0 m/s²
- * - Ventana: 2000 ms
- * - Refractario entre picos contados: 400 ms (reduce rebotes mecánicos de un golpe)
+ * Criterio académico (taller) + perfiles comerciales:
+ * - Umbral / ventana / refractario / min picos vienen de [SensitivityProfile]
  * - GOLPE: 1 pico y duración sobre umbral < 250 ms
  * - MOVIMIENTO_BRUSCO_AISLADO: 2 picos, o 1 pico “ancho” (≥ 250 ms)
- * - EVENTO_SISMICO: ≥ 3 picos en la ventana (o simulación explícita)
+ * - EVENTO_SISMICO: ≥ minPicosSismo en la ventana (o simulación / alerta IGP)
  *
- * Solo EVENTO_SISMICO debe disparar evacuación.
- * Un pico = un cruce de umbral (flanco de subida), no cada sample sobre el umbral.
- *
- * Métodos sincronizados: SensorManager entrega onSensorChanged en hilo de sensor
- * y la simulación corre en el hilo principal.
+ * Solo EVENTO_SISMICO (local o oficial) debe disparar evacuación.
  */
 enum class TipoEvento(val etiqueta: String) {
     NINGUNO("—"),
     GOLPE("GOLPE"),
     MOVIMIENTO_BRUSCO_AISLADO("MOVIMIENTO BRUSCO AISLADO"),
-    EVENTO_SISMICO("EVENTO SÍSMICO")
+    EVENTO_SISMICO("EVENTO SÍSMICO"),
+    ALERTA_OFICIAL_IGP("ALERTA OFICIAL IGP/INDECI")
 }
 
 class EventClassifier(
-    private val umbral: Double = 13.0,
-    private val ventanaMs: Long = 2000L,
-    private val refractarioMs: Long = 400L,
+    private var umbral: Double = 13.0,
+    private var ventanaMs: Long = 2000L,
+    private var refractarioMs: Long = 400L,
+    private var minPicosSismo: Int = 3,
     private val duracionGolpeMaxMs: Long = 250L
 ) {
     private data class Pico(val timestampMs: Long, val duracionMs: Long)
@@ -34,8 +30,16 @@ class EventClassifier(
     private var ultimoPicoContadoMs: Long = 0L
     private var enPico: Boolean = false
     private var inicioPicoMs: Long = 0L
-    /** True solo si el flanco de subida actual registró un pico en la lista. */
     private var picoActualRegistrado: Boolean = false
+
+    @Synchronized
+    fun aplicarPerfil(profile: SensitivityProfile, usarLinear: Boolean) {
+        umbral = if (usarLinear) profile.umbralLinear else profile.umbralAccel
+        ventanaMs = profile.ventanaMs
+        refractarioMs = profile.refractarioMs
+        minPicosSismo = profile.minPicosSismo
+        reset()
+    }
 
     @Synchronized
     fun reset() {
@@ -46,10 +50,6 @@ class EventClassifier(
         picoActualRegistrado = false
     }
 
-    /**
-     * Procesa una muestra. Devuelve clasificación cuando hay flanco
-     * relevante; null si no hay cambio a mostrar.
-     */
     @Synchronized
     fun procesar(aceleracion: Double, ahoraMs: Long): TipoEvento? {
         if (aceleracion > umbral) {
@@ -78,7 +78,6 @@ class EventClassifier(
                 return clasificar(ahoraMs)
             }
             picoActualRegistrado = false
-            // Flanco de bajada de un rebote dentro del refractario: no reclasificar
             return null
         }
 
@@ -103,7 +102,7 @@ class EventClassifier(
     private fun clasificar(ahoraMs: Long): TipoEvento {
         purgar(ahoraMs)
         return when {
-            picos.size >= 3 -> TipoEvento.EVENTO_SISMICO
+            picos.size >= minPicosSismo -> TipoEvento.EVENTO_SISMICO
             picos.size == 2 -> TipoEvento.MOVIMIENTO_BRUSCO_AISLADO
             picos.size == 1 -> {
                 val d = picos[0].duracionMs

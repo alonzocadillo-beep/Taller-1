@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B0F19"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ajustes"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Sensibilidad del clasificador (UC17)"
+            android:textColor="#8A9BB4"
+            android:textSize="14sp" />
+
+        <RadioGroup
+            android:id="@+id/groupSensibilidad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <RadioButton
+                android:id="@+id/rbConservador"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Conservador (menos falsos positivos)"
+                android:textColor="#FFFFFF" />
+
+            <RadioButton
+                android:id="@+id/rbNormal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Normal (recomendado)"
+                android:textColor="#FFFFFF" />
+
+            <RadioButton
+                android:id="@+id/rbSensible"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sensible (más detección)"
+                android:textColor="#FFFFFF" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Contacto de emergencia (UC16)"
+            android:textColor="#8A9BB4"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/inputContactoNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Nombre"
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#5C6D8A" />
+
+        <EditText
+            android:id="@+id/inputContactoTelefono"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Teléfono (SMS)"
+            android:inputType="phone"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#5C6D8A" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchIgp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Consultar reportes IGP (INDECI)"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Zona segura favorita (tu parque cercano)"
+            android:textColor="#8A9BB4"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/inputZonaFavoritaNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Nombre (ej. Parque de mi barrio)"
+            android:inputType="text"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#5C6D8A" />
+
+        <TextView
+            android:id="@+id/textoZonaFavoritaCoords"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Coords: no configurada"
+            android:textColor="#5C6D8A"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUsarUbicacionFavorita"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Usar mi ubicación actual como favorita"
+            app:cornerRadius="20dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBorrarFavorita"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Borrar zona favorita"
+            android:textColor="#EF9A9A" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuardarAjustes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Guardar"
+            app:cornerRadius="20dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVolverAjustes"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Volver"
+            app:cornerRadius="20dp" />
+    </LinearLayout>
+</ScrollView>

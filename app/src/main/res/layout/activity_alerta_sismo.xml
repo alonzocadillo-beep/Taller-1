@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="#1A1A1A">
 
-    <!-- Panel tipo "mapa" sin SDK (evita crash por falta de API key) -->
     <FrameLayout
         android:id="@+id/panelMapa"
         android:layout_width="match_parent"
@@ -19,7 +18,8 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="24dp"
+            android:paddingTop="120dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -30,10 +30,30 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/textoFuenteAlerta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="Fuente: —"
+                android:textColor="#FFCC80"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/textoDetalleAlerta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text=""
+                android:textColor="#B0BEC5"
+                android:textSize="12sp" />
+
+            <TextView
                 android:id="@+id/textoOrigen"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:gravity="center"
                 android:text="Tu ubicación: —"
                 android:textColor="#80CBC4"
@@ -43,7 +63,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginVertical="12dp"
-                android:text="↓ ruta segura (verde)"
+                android:text="↓ ruta segura"
                 android:textColor="#4CAF50"
                 android:textSize="14sp" />
 
@@ -55,15 +75,6 @@
                 android:text="Zona segura: —"
                 android:textColor="#81C784"
                 android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center"
-                android:text="Zonas inseguras simuladas en rojo se mostrarán en Google Maps."
-                android:textColor="#EF9A9A"
-                android:textSize="12sp" />
         </LinearLayout>
     </FrameLayout>
 
@@ -95,7 +106,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Evento sísmico detectado. Sigue la ruta hacia la zona segura."
+                android:text="Sigue la ruta hacia un espacio abierto seguro."
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -106,7 +117,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="24dp"
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -121,12 +132,38 @@
             app:cornerRadius="24dp" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCerrar"
+            android:id="@+id/btnSilenciar"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Entendido / silenciar alarma"
+            android:text="Silenciar (mantener pantalla)"
+            app:cornerRadius="24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCompartir"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Avisar contacto / compartir"
+            app:cornerRadius="24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFalsaAlarma"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Falsa alarma"
+            android:textColor="#EF9A9A" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCerrar"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cerrar"
             app:cornerRadius="24dp" />
     </LinearLayout>
 
