@@ -86,7 +86,7 @@ class AlertaSismoActivity : AppCompatActivity() {
         val textoFuente = findViewById<TextView>(R.id.textoFuenteAlerta)
         textoFuente.text = when {
             fuente.contains("igp", ignoreCase = true) ->
-                "Fuente: reporte oficial IGP (capa INDECI/SASPe)"
+                "Fuente: reporte oficial IGP"
             fuente.contains("simul", ignoreCase = true) -> "Fuente: simulación"
             else -> "Fuente: sensor local del dispositivo"
         }
@@ -124,6 +124,7 @@ class AlertaSismoActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.btnFalsaAlarma).setOnClickListener {
             EventHistoryStore(this).markFalseAlarm(eventId)
+            AppEventBus.publish(DomainEvent.FalseAlarmReported(eventId))
             detenerAlarmaYVibracion()
             Toast.makeText(this, "Marcado como falsa alarma", Toast.LENGTH_SHORT).show()
             finish()
@@ -165,8 +166,9 @@ class AlertaSismoActivity : AppCompatActivity() {
         val mensaje =
             "⚠️ Alerta sísmica ($fuente). Voy hacia zona segura: $zonaTxt. Mi ubicación: $ubiTxt"
 
-        val phone = settings.emergencyContactPhone
-        if (phone.isNotBlank()) {
+        val phone = settings.emergencyContacts.firstOrNull()?.phone
+            ?: settings.emergencyContactPhone
+        if (!phone.isNullOrBlank()) {
             try {
                 val sms = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phone")).apply {
                     putExtra("sms_body", mensaje)

@@ -156,7 +156,9 @@ class MainActivity : AppCompatActivity() {
     private fun solicitarPermisos() {
         val permisos = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.READ_CONTACTS
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permisos.add(Manifest.permission.POST_NOTIFICATIONS)

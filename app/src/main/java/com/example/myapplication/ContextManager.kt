@@ -45,7 +45,6 @@ class ContextManager(private val context: Context) : SensorEventListener {
     private var sensorActivo: Sensor? = null
     private var usandoLinear = false
     private var fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-    private var adaptationEngine = AdaptationEngine(context)
     private val classifier = EventClassifier()
     private val settings = AppSettings(context)
     private val history = EventHistoryStore(context)
@@ -261,7 +260,7 @@ class ContextManager(private val context: Context) : SensorEventListener {
             publicarEvento(TipoEvento.ALERTA_OFICIAL_IGP)
             solicitarAlerta(
                 mensaje = "¡Alerta oficial IGP! ${latest.resumen}",
-                fuente = "igp_indeci",
+                fuente = "igp",
                 detalle = latest.resumen,
                 tipoHistorial = TipoEvento.ALERTA_OFICIAL_IGP.name
             )
@@ -357,13 +356,21 @@ class ContextManager(private val context: Context) : SensorEventListener {
         mainHandler.post {
             Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
         }
-        adaptationEngine.evaluarAdaptacion(
-            sismoDetectado = true,
-            latActual = lat,
-            lonActual = lon,
-            fuente = fuente,
-            detalle = detalle,
-            eventId = eventId
+        // Arquitectura por eventos: no llamar UI/SMS directo; publicar al bus
+        AppEventBus.publish(
+            DomainEvent.SeismicAlertTriggered(
+                eventId = eventId,
+                fuente = fuente,
+                mensaje = mensaje,
+                detalle = detalle,
+                lat = lat,
+                lon = lon,
+                tipoHistorial = if (fuente == "igp") {
+                    TipoEvento.ALERTA_OFICIAL_IGP.name
+                } else {
+                    TipoEvento.EVENTO_SISMICO.name
+                }
+            )
         )
     }
 

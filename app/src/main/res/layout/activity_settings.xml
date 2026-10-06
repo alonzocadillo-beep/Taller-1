@@ -24,7 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Sensibilidad del clasificador (UC17)"
+            android:text="Sensibilidad del clasificador"
             android:textColor="#8A9BB4"
             android:textSize="14sp" />
 
@@ -60,42 +60,65 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Contacto de emergencia (UC16)"
+            android:text="Contactos de emergencia (agenda del móvil)"
             android:textColor="#8A9BB4"
             android:textSize="14sp" />
 
-        <EditText
-            android:id="@+id/inputContactoNombre"
+        <TextView
+            android:id="@+id/textoListaContactos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Nombre"
-            android:inputType="textPersonName"
+            android:text="Ningún contacto aún"
             android:textColor="#FFFFFF"
-            android:textColorHint="#5C6D8A" />
+            android:textSize="14sp" />
 
-        <EditText
-            android:id="@+id/inputContactoTelefono"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarContacto"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Teléfono (SMS)"
-            android:inputType="phone"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#5C6D8A" />
+            android:layout_marginTop="8dp"
+            android:text="Agregar desde agenda"
+            app:cornerRadius="20dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLimpiarContactos"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Quitar todos los contactos"
+            android:textColor="#EF9A9A" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchAutoSms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="SMS automático (temblor + llegada a zona segura)"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Si está activo, se envía solo a tu lista al detectar alerta y al llegar a zona segura. Requiere permiso SMS."
+            android:textColor="#5C6D8A"
+            android:textSize="12sp" />
 
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/switchIgp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Consultar reportes IGP (INDECI)"
+            android:text="Consultar reportes oficiales IGP"
             android:textColor="#FFFFFF" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Zona segura favorita (tu parque cercano)"
+            android:text="Zona segura favorita"
             android:textColor="#8A9BB4"
             android:textSize="14sp" />
 

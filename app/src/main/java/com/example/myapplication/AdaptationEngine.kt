@@ -97,6 +97,20 @@ class AdaptationEngine(private val context: Context) {
             modoDegradado = modoDegradado,
             eventId = eventId
         )
+        // Evento de dominio: zona elegida → geofence / UI / otros handlers
+        AppEventBus.publish(
+            DomainEvent.SafeZoneSelected(
+                eventId = eventId,
+                zonaNombre = zona.nombre,
+                latDest = zona.lat,
+                lonDest = zona.lon,
+                latOri = latOri,
+                lonOri = lonOri,
+                distanciaKm = distKm,
+                fuente = fuente,
+                modoDegradado = modoDegradado
+            )
+        )
     }
 
     private fun lanzarActividadAlerta(

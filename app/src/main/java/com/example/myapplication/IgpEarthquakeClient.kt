@@ -15,7 +15,7 @@ import kotlin.math.sqrt
 
 /**
  * Cliente de reportes sísmicos del IGP (fuente oficial pública ArcGIS).
- * Narrativa académica: capa de datos oficiales (IGP) alineada a difusión INDECI/SASPe.
+ * Fuente oficial pública: IGP (ArcGIS UltimoSismo).
  */
 data class IgpEarthquake(
     val objectId: Long,

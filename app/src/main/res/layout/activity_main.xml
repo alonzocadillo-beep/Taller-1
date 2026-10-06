@@ -31,7 +31,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:text="Sensor local + reportes IGP / INDECI"
+        android:text="Sensor local + reportes oficiales IGP"
         android:textColor="#8A9BB4"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -163,7 +163,7 @@
         android:layout_marginHorizontal="32dp"
         android:layout_marginBottom="32dp"
         android:gravity="center"
-        android:text="Fusión sensor local + feed IGP. Solo eventos sísmicos / alertas oficiales disparan evacuación."
+        android:text="Fusión sensor local + feed IGP. Arquitectura por eventos: alerta, SMS auto y zona segura."
         android:textColor="#5C6D8A"
         android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="parent" />
